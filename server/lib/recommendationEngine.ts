@@ -1,6 +1,8 @@
 import PlexAPI from '@server/api/plexapi';
 import type {
   TmdbMovieResult,
+  TmdbSearchMovieResponse,
+  TmdbSearchTvResponse,
   TmdbTvResult,
 } from '@server/api/themoviedb/interfaces';
 import { MediaStatus, MediaType } from '@server/constants/media';
@@ -59,7 +61,7 @@ function shuffleWithinScoreBands(items: CandidateItem[]): CandidateItem[] {
 
 class RecommendationEngine {
   private poolCache = new NodeCache({
-    stdTtl: POOL_CACHE_TTL_SECONDS,
+    stdTTL: POOL_CACHE_TTL_SECONDS,
     checkperiod: 120,
   });
 
@@ -223,16 +225,17 @@ class RecommendationEngine {
     const tmdb = createTmdbWithRegionLanguage(user);
     const scoreByKey = new Map<string, CandidateItem>();
 
-    const fetches = seeds.flatMap((seed) =>
-      seed.mediaType === MediaType.MOVIE
-        ? [
-            tmdb.getMovieRecommendations({ movieId: seed.tmdbId }),
-            tmdb.getMovieSimilar({ movieId: seed.tmdbId }),
-          ]
-        : [
-            tmdb.getTvRecommendations({ tvId: seed.tmdbId }),
-            tmdb.getTvSimilar({ tvId: seed.tmdbId }),
-          ]
+    const fetches = seeds.flatMap(
+      (seed) =>
+        (seed.mediaType === MediaType.MOVIE
+          ? [
+              tmdb.getMovieRecommendations({ movieId: seed.tmdbId }),
+              tmdb.getMovieSimilar({ movieId: seed.tmdbId }),
+            ]
+          : [
+              tmdb.getTvRecommendations({ tvId: seed.tmdbId }),
+              tmdb.getTvSimilar({ tvId: seed.tmdbId }),
+            ]) as Promise<TmdbSearchMovieResponse | TmdbSearchTvResponse>[]
     );
 
     const results = await Promise.allSettled(fetches);
