@@ -1,3 +1,7 @@
+> [!IMPORTANT]
+> **This is a private, personal fork of [seerr-team/seerr](https://github.com/seerr-team/seerr), maintained for a single homelab setup.**
+> It is **not an official Seerr project**, is **not affiliated with the Seerr team**, and receives **no support** — issues, PRs, and questions should go to the [upstream repo](https://github.com/seerr-team/seerr) instead. This fork adds personalized, Plex-watch-history-based recommendation features on top of upstream Seerr for personal use only; it is not intended for other users to install or run. Use at your own risk.
+
 <p align="center">
 <img src="./public/logo_full.svg" alt="Seerr" style="margin: 20px 0;">
 </p>
