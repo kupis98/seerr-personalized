@@ -3,6 +3,7 @@ import ConfirmButton from '@app/components/Common/ConfirmButton';
 import LoadingSpinner from '@app/components/Common/LoadingSpinner';
 import PageTitle from '@app/components/Common/PageTitle';
 import Tooltip from '@app/components/Common/Tooltip';
+import BecauseYouWatched from '@app/components/Discover/BecauseYouWatched';
 import CreateSlider from '@app/components/Discover/CreateSlider';
 import DiscoverSliderEdit from '@app/components/Discover/DiscoverSliderEdit';
 import MovieGenreSlider from '@app/components/Discover/MovieGenreSlider';
@@ -415,6 +416,9 @@ const Discover = () => {
                 hideWhenEmpty
               />
             );
+            break;
+          case DiscoverSliderType.BECAUSE_YOU_WATCHED:
+            sliderComponent = <BecauseYouWatched />;
             break;
         }
 

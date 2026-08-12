@@ -54,6 +54,29 @@ function tvDetailsToResult(details: TmdbTvDetails): TmdbTvResult {
   };
 }
 
+recommendationsRoutes.get('/because-you-watched', async (req, res, next) => {
+  if (!req.user) {
+    return next({ status: 401, message: 'You must be logged in.' });
+  }
+
+  try {
+    const shelves = await recommendationEngine.getBecauseYouWatchedShelves(
+      req.user
+    );
+
+    return res.status(200).json({ shelves });
+  } catch (e) {
+    logger.error('Failed to retrieve because-you-watched shelves', {
+      label: 'API',
+      errorMessage: e.message,
+    });
+    return next({
+      status: 500,
+      message: 'Unable to retrieve because-you-watched shelves.',
+    });
+  }
+});
+
 recommendationsRoutes.get('/foryou', async (req, res, next) => {
   if (!req.user) {
     return next({ status: 401, message: 'You must be logged in.' });

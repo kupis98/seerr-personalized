@@ -21,10 +21,14 @@ const POOL_CACHE_TTL_SECONDS = 60 * 15;
 const SEED_COUNT = 25;
 const HISTORY_SIZE = 300;
 const CANDIDATE_PAGES_PER_ENDPOINT = 2;
+const SHELF_COUNT = 6;
+const ITEMS_PER_SHELF = 20;
+const MIN_SHELF_ITEMS = 4;
 
 interface SeedTitle {
   tmdbId: number;
   mediaType: MediaType;
+  title: string;
 }
 
 interface CandidateItem {
@@ -34,7 +38,23 @@ interface CandidateItem {
   score: number;
 }
 
+interface CandidatesBySeed {
+  flattened: CandidateItem[];
+  bySeed: Map<string, { seed: SeedTitle; items: CandidateItem[] }>;
+}
+
+export interface BecauseYouWatchedShelf {
+  seedTmdbId: number;
+  seedMediaType: MediaType;
+  seedTitle: string;
+  results: MixedResult[];
+}
+
 type MixedResult = MovieResult | TvResult;
+
+function seedKey(seed: { tmdbId: number; mediaType: MediaType }): string {
+  return `${seed.mediaType}:${seed.tmdbId}`;
+}
 
 function shuffleWithinScoreBands(items: CandidateItem[]): CandidateItem[] {
   const bands = new Map<number, CandidateItem[]>();
@@ -62,6 +82,11 @@ function shuffleWithinScoreBands(items: CandidateItem[]): CandidateItem[] {
 
 class RecommendationEngine {
   private poolCache = new NodeCache({
+    stdTTL: POOL_CACHE_TTL_SECONDS,
+    checkperiod: 120,
+  });
+
+  private shelfCache = new NodeCache({
     stdTTL: POOL_CACHE_TTL_SECONDS,
     checkperiod: 120,
   });
@@ -103,6 +128,65 @@ class RecommendationEngine {
     return available.slice(0, count).map((c) => this.toResult(c));
   }
 
+  public async getBecauseYouWatchedShelves(
+    user: User,
+    {
+      shelfCount = SHELF_COUNT,
+      itemsPerShelf = ITEMS_PER_SHELF,
+    }: { shelfCount?: number; itemsPerShelf?: number } = {}
+  ): Promise<BecauseYouWatchedShelf[]> {
+    const cacheKey = `shelves:${user.id}`;
+    const cached = this.shelfCache.get<BecauseYouWatchedShelf[]>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const seeds = await this.getSeedTitles(user);
+    if (seeds.length === 0) {
+      this.shelfCache.set(cacheKey, []);
+      return [];
+    }
+
+    const { bySeed } = await this.fetchTmdbCandidates(user, seeds);
+    const seedKeys = new Set(seeds.map(seedKey));
+
+    const allCandidates = Array.from(bySeed.values())
+      .flatMap((group) => group.items)
+      .filter((c) => !seedKeys.has(seedKey(c)));
+    const exclusionKeys = await this.getExclusionKeys(user, allCandidates);
+
+    const shelves: BecauseYouWatchedShelf[] = [];
+
+    for (const seed of seeds) {
+      if (shelves.length >= shelfCount) {
+        break;
+      }
+
+      const group = bySeed.get(seedKey(seed));
+      if (!group) {
+        continue;
+      }
+
+      const filtered = group.items.filter(
+        (c) => !seedKeys.has(seedKey(c)) && !exclusionKeys.has(seedKey(c))
+      );
+
+      if (filtered.length < MIN_SHELF_ITEMS) {
+        continue;
+      }
+
+      shelves.push({
+        seedTmdbId: seed.tmdbId,
+        seedMediaType: seed.mediaType,
+        seedTitle: seed.title,
+        results: filtered.slice(0, itemsPerShelf).map((c) => this.toResult(c)),
+      });
+    }
+
+    this.shelfCache.set(cacheKey, shelves);
+    return shelves;
+  }
+
   private toResult(candidate: CandidateItem): MixedResult {
     return candidate.mediaType === MediaType.MOVIE
       ? mapMovieResult(candidate.raw as TmdbMovieResult)
@@ -129,8 +213,8 @@ class RecommendationEngine {
       return [];
     }
 
-    const candidates = await this.fetchTmdbCandidates(user, seeds);
-    const filtered = await this.applyExclusions(user, candidates, seeds);
+    const { flattened } = await this.fetchTmdbCandidates(user, seeds);
+    const filtered = await this.applyExclusions(user, flattened, seeds);
 
     this.poolCache.set(cacheKey, filtered);
     return filtered;
@@ -210,6 +294,7 @@ class RecommendationEngine {
             tmdbId: Number(tmdbGuid.id.split('//')[1]),
             mediaType:
               metadata.type === 'show' ? MediaType.TV : MediaType.MOVIE,
+            title: metadata.title,
           });
         }
       } catch (e) {
@@ -230,9 +315,13 @@ class RecommendationEngine {
   private async fetchTmdbCandidates(
     user: User,
     seeds: SeedTitle[]
-  ): Promise<CandidateItem[]> {
+  ): Promise<CandidatesBySeed> {
     const tmdb = createTmdbWithRegionLanguage(user);
     const scoreByKey = new Map<string, CandidateItem>();
+    const bySeed = new Map<
+      string,
+      { seed: SeedTitle; items: CandidateItem[] }
+    >();
 
     const pages = Array.from(
       { length: CANDIDATE_PAGES_PER_ENDPOINT },
@@ -258,7 +347,7 @@ class RecommendationEngine {
     });
 
     const results = await Promise.allSettled(tasks.map((t) => t.promise));
-    const seedKeys = new Set(seeds.map((s) => `${s.mediaType}:${s.tmdbId}`));
+    const seedKeys = new Set(seeds.map(seedKey));
 
     results.forEach((result, index) => {
       if (result.status !== 'fulfilled') {
@@ -271,6 +360,12 @@ class RecommendationEngine {
       }
 
       const seed = tasks[index].seed;
+      const seedGroupKey = seedKey(seed);
+      let group = bySeed.get(seedGroupKey);
+      if (!group) {
+        group = { seed, items: [] };
+        bySeed.set(seedGroupKey, group);
+      }
 
       for (const raw of result.value.results) {
         const key = `${seed.mediaType}:${raw.id}`;
@@ -290,29 +385,37 @@ class RecommendationEngine {
             score: 1,
           });
         }
+
+        if (!group.items.some((i) => i.tmdbId === raw.id)) {
+          group.items.push({
+            tmdbId: raw.id,
+            mediaType: seed.mediaType,
+            raw,
+            score: 1,
+          });
+        }
       }
     });
 
-    return shuffleWithinScoreBands(Array.from(scoreByKey.values()));
+    return {
+      flattened: shuffleWithinScoreBands(Array.from(scoreByKey.values())),
+      bySeed,
+    };
   }
 
-  private async applyExclusions(
+  private async getExclusionKeys(
     user: User,
-    candidates: CandidateItem[],
-    seeds: SeedTitle[]
-  ): Promise<CandidateItem[]> {
-    if (candidates.length === 0) {
-      return [];
-    }
+    candidates: CandidateItem[]
+  ): Promise<Set<string>> {
+    const exclusionKeys = new Set<string>();
 
-    const seedKeys = new Set(seeds.map((s) => `${s.mediaType}:${s.tmdbId}`));
-    let filtered = candidates.filter(
-      (c) => !seedKeys.has(`${c.mediaType}:${c.tmdbId}`)
-    );
+    if (candidates.length === 0) {
+      return exclusionKeys;
+    }
 
     const media = await Media.getRelatedMedia(
       user,
-      filtered.map((c) => ({ tmdbId: c.tmdbId, mediaType: c.mediaType }))
+      candidates.map((c) => ({ tmdbId: c.tmdbId, mediaType: c.mediaType }))
     );
 
     const unavailableStatuses = new Set([
@@ -323,17 +426,11 @@ class RecommendationEngine {
       MediaStatus.BLOCKLISTED,
     ]);
 
-    filtered = filtered.filter(
-      (c) =>
-        !media.some(
-          (m) =>
-            m.tmdbId === c.tmdbId &&
-            m.mediaType === c.mediaType &&
-            unavailableStatuses.has(m.status)
-        )
-    );
+    media
+      .filter((m) => unavailableStatuses.has(m.status))
+      .forEach((m) => exclusionKeys.add(`${m.mediaType}:${m.tmdbId}`));
 
-    const tmdbIds = filtered.map((c) => c.tmdbId);
+    const tmdbIds = candidates.map((c) => c.tmdbId);
     const requestRepository = getRepository(MediaRequest);
     const existingRequests =
       tmdbIds.length > 0
@@ -345,28 +442,36 @@ class RecommendationEngine {
             .getMany()
         : [];
 
-    const requestedKeys = new Set(
-      existingRequests
-        .filter((r) => r.media != null)
-        .map((r) => `${r.media.mediaType}:${r.media.tmdbId}`)
-    );
-
-    filtered = filtered.filter(
-      (c) => !requestedKeys.has(`${c.mediaType}:${c.tmdbId}`)
-    );
+    existingRequests
+      .filter((r) => r.media != null)
+      .forEach((r) =>
+        exclusionKeys.add(`${r.media.mediaType}:${r.media.tmdbId}`)
+      );
 
     // Excludes both directions: dislikes must never resurface, and likes
     // have already been judged (they live on in the Liked rubric instead).
     const swipedItems = await Swipe.getSwipedTmdbIds(user);
-    const swipedKeys = new Set(
-      swipedItems.map((s) => `${s.mediaType}:${s.tmdbId}`)
+    swipedItems.forEach((s) =>
+      exclusionKeys.add(`${s.mediaType}:${s.tmdbId}`)
     );
 
-    filtered = filtered.filter(
-      (c) => !swipedKeys.has(`${c.mediaType}:${c.tmdbId}`)
-    );
+    return exclusionKeys;
+  }
 
-    return filtered;
+  private async applyExclusions(
+    user: User,
+    candidates: CandidateItem[],
+    seeds: SeedTitle[]
+  ): Promise<CandidateItem[]> {
+    if (candidates.length === 0) {
+      return [];
+    }
+
+    const seedKeys = new Set(seeds.map(seedKey));
+    const filtered = candidates.filter((c) => !seedKeys.has(seedKey(c)));
+    const exclusionKeys = await this.getExclusionKeys(user, filtered);
+
+    return filtered.filter((c) => !exclusionKeys.has(seedKey(c)));
   }
 }
 

@@ -5011,6 +5011,45 @@ paths:
       responses:
         '204':
           description: Succesfully removed watchlist item
+  /recommendations/because-you-watched:
+    get:
+      summary: Get "Because you watched" shelves
+      description: |
+        Returns several personalized shelves, each seeded from one
+        recently-watched Plex title, in the style of "Because you
+        watched X".
+      tags:
+        - recommendations
+      responses:
+        '200':
+          description: Results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shelves:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        seedTmdbId:
+                          type: number
+                          example: 27205
+                        seedMediaType:
+                          type: string
+                          enum:
+                            - movie
+                            - tv
+                        seedTitle:
+                          type: string
+                          example: Inception
+                        results:
+                          type: array
+                          items:
+                            anyOf:
+                              - $ref: '#/components/schemas/MovieResult'
+                              - $ref: '#/components/schemas/TvResult'
   /recommendations/foryou:
     get:
       summary: Get personalized For You recommendations
