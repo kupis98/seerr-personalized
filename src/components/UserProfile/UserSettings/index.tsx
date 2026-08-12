@@ -21,6 +21,7 @@ const messages = defineMessages('components.UserProfile.UserSettings', {
   menuLinkedAccounts: 'Linked Accounts',
   menuNotifications: 'Notifications',
   menuPermissions: 'Permissions',
+  menuRecommendations: 'Recommendations',
   unauthorizedDescription:
     "You do not have permission to modify this user's settings.",
 });
@@ -68,6 +69,11 @@ const UserSettings = ({ children }: UserSettingsProps) => {
       text: intl.formatMessage(messages.menuLinkedAccounts),
       route: '/settings/linked-accounts',
       regex: /\/settings\/linked-accounts/,
+    },
+    {
+      text: intl.formatMessage(messages.menuRecommendations),
+      route: '/settings/recommendations',
+      regex: /\/settings\/recommendations/,
     },
     {
       text: intl.formatMessage(messages.menuNotifications),
