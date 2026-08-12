@@ -1,0 +1,59 @@
+services:
+  seerr:
+    image: ghcr.io/kupis98/seerr-personalized:latest
+    container_name: seerr-personalized
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-Europe/Zurich}
+      DB_TYPE: postgres
+      DB_HOST: seerr-postgres
+      DB_PORT: '5432'
+      DB_USER: seerr
+      DB_PASS: ${SEERR_DB_PASSWORD}
+      DB_NAME: seerr
+      DB_USE_SSL: 'false'
+      DB_POOL_SIZE: '10'
+    volumes:
+      - seerr-config:/app/config
+    networks:
+      - immich_default
+      - seerr-internal
+    depends_on:
+      seerr-postgres:
+        condition: service_healthy
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:5055/api/v1/settings/public || exit 1
+      start_period: 20s
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  seerr-postgres:
+    image: postgres:16-alpine
+    container_name: seerr-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: seerr
+      POSTGRES_PASSWORD: ${SEERR_DB_PASSWORD}
+      POSTGRES_DB: seerr
+    volumes:
+      - seerr-postgres-data:/var/lib/postgresql/data
+    networks:
+      - seerr-internal
+    healthcheck:
+      test: pg_isready -U seerr -d seerr
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  # Shared network with the rest of the homelab stack (Cloudflare Tunnel,
+  # other services). Must already exist — created by another compose stack.
+  immich_default:
+    external: true
+  # Private network for seerr <-> seerr-postgres only.
+  seerr-internal:
+
+volumes:
+  seerr-config:
+  seerr-postgres-data:
