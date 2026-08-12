@@ -5011,6 +5011,163 @@ paths:
       responses:
         '204':
           description: Succesfully removed watchlist item
+  /recommendations/foryou:
+    get:
+      summary: Get personalized For You recommendations
+      description: |
+        Returns a page of personalized recommendations seeded from the
+        user's Plex watch history, excluding titles already in the
+        library, already requested, or previously disliked.
+      tags:
+        - recommendations
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: number
+            example: 1
+            default: 1
+      responses:
+        '200':
+          description: Results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: number
+                    example: 1
+                  totalPages:
+                    type: number
+                    example: 1
+                  totalResults:
+                    type: number
+                    example: 20
+                  results:
+                    type: array
+                    items:
+                      anyOf:
+                        - $ref: '#/components/schemas/MovieResult'
+                        - $ref: '#/components/schemas/TvResult'
+  /recommendations/liked:
+    get:
+      summary: Get liked titles
+      description: |
+        Returns a page of titles the user has swiped right on, newest
+        first.
+      tags:
+        - recommendations
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: number
+            example: 1
+            default: 1
+      responses:
+        '200':
+          description: Results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: number
+                    example: 1
+                  totalPages:
+                    type: number
+                    example: 1
+                  totalResults:
+                    type: number
+                    example: 20
+                  results:
+                    type: array
+                    items:
+                      anyOf:
+                        - $ref: '#/components/schemas/MovieResult'
+                        - $ref: '#/components/schemas/TvResult'
+  /recommendations/swipe:
+    get:
+      summary: Get a batch of swipe candidates
+      description: |
+        Returns up to 20 new personalized recommendation candidates,
+        excluding any tmdbIds passed via the exclude parameter.
+      tags:
+        - recommendations
+      parameters:
+        - in: query
+          name: exclude
+          schema:
+            type: string
+            example: 1,2,3
+          description: Comma-separated list of tmdbIds already seen this session
+      responses:
+        '200':
+          description: Results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      anyOf:
+                        - $ref: '#/components/schemas/MovieResult'
+                        - $ref: '#/components/schemas/TvResult'
+    post:
+      summary: Record a swipe
+      description: Persists a like/dislike swipe for a title.
+      tags:
+        - recommendations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tmdbId
+                - mediaType
+                - direction
+              properties:
+                tmdbId:
+                  type: number
+                  example: 550
+                mediaType:
+                  type: string
+                  enum:
+                    - movie
+                    - tv
+                direction:
+                  type: string
+                  enum:
+                    - like
+                    - dislike
+      responses:
+        '200':
+          description: Swipe recorded
+  /recommendations/reset-dislikes:
+    post:
+      summary: Reset dislikes
+      description: |
+        Clears all recorded dislikes for the current user, making
+        previously rejected titles eligible for recommendation again.
+      tags:
+        - recommendations
+      responses:
+        '200':
+          description: Dislikes reset
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  removed:
+                    type: number
+                    example: 5
   /user/{userId}/watchlist:
     get:
       summary: Get the Plex watchlist for a specific user
