@@ -18,8 +18,9 @@ import { createTmdbWithRegionLanguage } from '@server/routes/discover';
 import NodeCache from 'node-cache';
 
 const POOL_CACHE_TTL_SECONDS = 60 * 15;
-const SEED_COUNT = 10;
-const HISTORY_SIZE = 200;
+const SEED_COUNT = 25;
+const HISTORY_SIZE = 300;
+const CANDIDATE_PAGES_PER_ENDPOINT = 2;
 
 interface SeedTitle {
   tmdbId: number;
@@ -233,20 +234,30 @@ class RecommendationEngine {
     const tmdb = createTmdbWithRegionLanguage(user);
     const scoreByKey = new Map<string, CandidateItem>();
 
-    const fetches = seeds.flatMap(
-      (seed) =>
-        (seed.mediaType === MediaType.MOVIE
-          ? [
-              tmdb.getMovieRecommendations({ movieId: seed.tmdbId }),
-              tmdb.getMovieSimilar({ movieId: seed.tmdbId }),
-            ]
-          : [
-              tmdb.getTvRecommendations({ tvId: seed.tmdbId }),
-              tmdb.getTvSimilar({ tvId: seed.tmdbId }),
-            ]) as Promise<TmdbSearchMovieResponse | TmdbSearchTvResponse>[]
+    const pages = Array.from(
+      { length: CANDIDATE_PAGES_PER_ENDPOINT },
+      (_, i) => i + 1
     );
 
-    const results = await Promise.allSettled(fetches);
+    const tasks: {
+      seed: SeedTitle;
+      promise: Promise<TmdbSearchMovieResponse | TmdbSearchTvResponse>;
+    }[] = seeds.flatMap((seed) => {
+      const promises =
+        seed.mediaType === MediaType.MOVIE
+          ? pages.flatMap((page) => [
+              tmdb.getMovieRecommendations({ movieId: seed.tmdbId, page }),
+              tmdb.getMovieSimilar({ movieId: seed.tmdbId, page }),
+            ])
+          : pages.flatMap((page) => [
+              tmdb.getTvRecommendations({ tvId: seed.tmdbId, page }),
+              tmdb.getTvSimilar({ tvId: seed.tmdbId, page }),
+            ]);
+
+      return promises.map((promise) => ({ seed, promise }));
+    });
+
+    const results = await Promise.allSettled(tasks.map((t) => t.promise));
     const seedKeys = new Set(seeds.map((s) => `${s.mediaType}:${s.tmdbId}`));
 
     results.forEach((result, index) => {
@@ -259,7 +270,7 @@ class RecommendationEngine {
         return;
       }
 
-      const seed = seeds[Math.floor(index / 2)];
+      const seed = tasks[index].seed;
 
       for (const raw of result.value.results) {
         const key = `${seed.mediaType}:${raw.id}`;
@@ -344,13 +355,15 @@ class RecommendationEngine {
       (c) => !requestedKeys.has(`${c.mediaType}:${c.tmdbId}`)
     );
 
-    const dislikedItems = await Swipe.getDislikedTmdbIds(user);
-    const dislikedKeys = new Set(
-      dislikedItems.map((d) => `${d.mediaType}:${d.tmdbId}`)
+    // Excludes both directions: dislikes must never resurface, and likes
+    // have already been judged (they live on in the Liked rubric instead).
+    const swipedItems = await Swipe.getSwipedTmdbIds(user);
+    const swipedKeys = new Set(
+      swipedItems.map((s) => `${s.mediaType}:${s.tmdbId}`)
     );
 
     filtered = filtered.filter(
-      (c) => !dislikedKeys.has(`${c.mediaType}:${c.tmdbId}`)
+      (c) => !swipedKeys.has(`${c.mediaType}:${c.tmdbId}`)
     );
 
     return filtered;

@@ -74,6 +74,16 @@ export class Swipe {
     });
   }
 
+  public static async getSwipedTmdbIds(
+    user: User
+  ): Promise<{ tmdbId: number; mediaType: MediaType }[]> {
+    const swipeRepository = getRepository(Swipe);
+    return swipeRepository.find({
+      select: { tmdbId: true, mediaType: true },
+      where: { user: { id: user.id } },
+    });
+  }
+
   public static async getLikes(
     user: User,
     { offset = 0, limit = 20 }: { offset?: number; limit?: number }
