@@ -66,8 +66,11 @@ const ResetPassword = () => {
         <LanguagePicker />
       </div>
       <div className="relative z-40 mt-10 flex flex-col items-center px-4 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="relative h-48 w-full max-w-full">
-          <Image src="/logo_stacked.svg" alt="Logo" fill />
+        <div className="flex flex-col items-center gap-3">
+          <div className="relative h-24 w-24">
+            <Image src="/logo_icon.svg" alt="Logo" fill />
+          </div>
+          <span className="text-3xl font-bold text-white">Plexflix</span>
         </div>
         <h2 className="mt-12 text-center text-3xl font-extrabold leading-9 text-gray-100">
           {intl.formatMessage(messages.resetpassword)}

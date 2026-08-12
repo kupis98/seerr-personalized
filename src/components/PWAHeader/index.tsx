@@ -2,7 +2,7 @@ interface PWAHeaderProps {
   applicationTitle?: string;
 }
 
-const PWAHeader = ({ applicationTitle = 'Seerr' }: PWAHeaderProps) => {
+const PWAHeader = ({ applicationTitle = 'Plexflix' }: PWAHeaderProps) => {
   return (
     <>
       <link
@@ -168,7 +168,7 @@ const PWAHeader = ({ applicationTitle = 'Seerr' }: PWAHeaderProps) => {
       />
       <meta name="format-detection" content="telephone=no" />
       <meta name="mobile-web-app-capable" content="yes" />
-      <meta name="theme-color" content="#1f2937" />
+      <meta name="theme-color" content="#0a0a0a" />
       <meta name="application-name" content={applicationTitle} />
     </>
   );

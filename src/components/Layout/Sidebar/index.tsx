@@ -199,8 +199,16 @@ const Sidebar = ({
                   >
                     <div className="flex flex-shrink-0 items-center px-2">
                       <span className="w-full px-4 text-xl text-gray-50">
-                        <Link href="/" className="relative block h-24 w-64">
-                          <Image src="/logo_full.svg" alt="Logo" fill />
+                        <Link
+                          href="/"
+                          className="flex h-24 items-center gap-3"
+                        >
+                          <span className="relative block h-16 w-16 flex-shrink-0">
+                            <Image src="/logo_icon.svg" alt="Logo" fill />
+                          </span>
+                          <span className="truncate text-2xl font-bold text-white">
+                            Plexflix
+                          </span>
                         </Link>
                       </span>
                     </div>
@@ -262,13 +270,18 @@ const Sidebar = ({
             <div className="flex flex-1 flex-col overflow-y-auto pb-4">
               <div className="flex flex-shrink-0 items-center">
                 <span className="w-full px-4 py-2 text-2xl text-gray-50">
-                  <Link href="/" className="relative block h-24">
-                    <Image
-                      src="/logo_full.svg"
-                      alt="Logo"
-                      fill
-                      loading="eager"
-                    />
+                  <Link href="/" className="flex h-24 items-center gap-3">
+                    <span className="relative block h-16 w-16 flex-shrink-0">
+                      <Image
+                        src="/logo_icon.svg"
+                        alt="Logo"
+                        fill
+                        loading="eager"
+                      />
+                    </span>
+                    <span className="truncate text-2xl font-bold text-white">
+                      Plexflix
+                    </span>
                   </Link>
                 </span>
               </div>
