@@ -91,6 +91,21 @@ interface PlexMetadataResponse {
   };
 }
 
+export interface PlexHistoryItem {
+  ratingKey: string;
+  grandparentRatingKey?: string;
+  title: string;
+  type: 'movie' | 'episode' | 'track' | string;
+  viewedAt: number;
+  accountID: number;
+}
+
+interface PlexHistoryResponse {
+  MediaContainer: {
+    Metadata?: PlexHistoryItem[];
+  };
+}
+
 class PlexAPI extends ExternalAPI {
   constructor({
     plexToken,
@@ -234,6 +249,41 @@ class PlexAPI extends ExternalAPI {
     );
 
     return response.MediaContainer.Metadata;
+  }
+
+  /**
+   * Returns playback history from the local Plex Media Server. The server
+   * returns history for ALL server users regardless of which token is used
+   * (verified against a real instance), so callers MUST filter the result
+   * by `accountID` themselves rather than relying on the server-side
+   * `accountID` query param alone. `accountID` matches the plex.tv global
+   * account id, i.e. the same value Seerr stores as `User.plexId`.
+   */
+  public async getWatchHistory({
+    accountId,
+    size = 200,
+  }: { accountId?: number; size?: number } = {}): Promise<
+    PlexHistoryItem[]
+  > {
+    const response = await this.get<PlexHistoryResponse>(
+      '/status/sessions/history/all',
+      {
+        headers: {
+          'X-Plex-Container-Start': '0',
+          'X-Plex-Container-Size': `${size}`,
+        },
+        params: {
+          sort: 'viewedAt:desc',
+          ...(accountId ? { accountID: accountId } : {}),
+        },
+      }
+    );
+
+    const items = response.MediaContainer.Metadata ?? [];
+
+    return accountId
+      ? items.filter((item) => item.accountID === accountId)
+      : items;
   }
 }
 
