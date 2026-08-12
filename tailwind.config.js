@@ -20,6 +20,13 @@ module.exports = {
       colors: {
         indigo: colors.red,
         purple: colors.red,
+        // Deepen just the two background-surface shades toward true black
+        // (Netflix-style) while leaving lighter grays — borders, hover
+        // states, body text — untouched so contrast/legibility hold up.
+        gray: {
+          900: '#0a0a0a',
+          800: '#161616',
+        },
       },
       transitionProperty: {
         'max-height': 'max-height',
