@@ -1,9 +1,16 @@
 import CachedImage from '@app/components/Common/CachedImage';
+import SwipeDetailModal from '@app/components/Swipe/SwipeDetailModal';
 import globalMessages from '@app/i18n/globalMessages';
+import defineMessages from '@app/utils/defineMessages';
 import { mediaResultToTitleCardProps } from '@app/utils/mediaResultToTitleCardProps';
+import { InformationCircleIcon } from '@heroicons/react/24/solid';
 import type { MovieResult, TvResult } from '@server/models/Search';
 import { useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
+
+const messages = defineMessages('components.Swipe.SwipeCard', {
+  showdetails: 'Show details',
+});
 
 const SWIPE_THRESHOLD = 120;
 const FLY_OUT_DISTANCE = 700;
@@ -21,6 +28,7 @@ const SwipeCard = ({ title, onSwiped, active, zIndex }: SwipeCardProps) => {
   const dragState = useRef({ startX: 0, startY: 0, dragging: false });
   const [transform, setTransform] = useState({ x: 0, y: 0, rotate: 0 });
   const [transitioning, setTransitioning] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
   const props = mediaResultToTitleCardProps(title);
 
@@ -121,6 +129,25 @@ const SwipeCard = ({ title, onSwiped, active, zIndex }: SwipeCardProps) => {
           NOPE
         </div>
       )}
+      <button
+        type="button"
+        title={intl.formatMessage(messages.showdetails)}
+        aria-label={intl.formatMessage(messages.showdetails)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowDetails(true);
+        }}
+        onPointerDown={(e) => e.stopPropagation()}
+        className="absolute bottom-3 right-3 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80"
+      >
+        <InformationCircleIcon className="h-7 w-7" />
+      </button>
+      <SwipeDetailModal
+        tmdbId={props.id}
+        mediaType={props.mediaType}
+        show={showDetails}
+        onClose={() => setShowDetails(false)}
+      />
     </div>
   );
 };
