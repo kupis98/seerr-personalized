@@ -1,5 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const defaultTheme = require('tailwindcss/defaultTheme');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const colors = require('tailwindcss/colors');
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -11,6 +13,14 @@ module.exports = {
   ],
   theme: {
     extend: {
+      // Fork-specific brand recolor: everywhere the app uses its normal
+      // indigo/purple accent (buttons, active nav, links, gradients) now
+      // renders as red, so this fork is visually distinguishable from
+      // stock Seerr at a glance (Netflix-style red-on-dark).
+      colors: {
+        indigo: colors.red,
+        purple: colors.red,
+      },
       transitionProperty: {
         'max-height': 'max-height',
         width: 'width',
