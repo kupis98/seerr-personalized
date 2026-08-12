@@ -108,6 +108,12 @@ const Swipe = () => {
     [queue]
   );
 
+  const handleSkip = useCallback(() => {
+    // "I don't know this title" — just move on, no like/dislike recorded,
+    // so it isn't excluded from future recommendations.
+    setQueue((prev) => prev.slice(1));
+  }, []);
+
   return (
     <>
       <PageTitle title={intl.formatMessage(messages.swipe)} />
@@ -142,7 +148,11 @@ const Swipe = () => {
                 ))
             )}
           </div>
-          <SwipeButtons onSwipe={handleSwipe} disabled={queue.length === 0} />
+          <SwipeButtons
+            onSwipe={handleSwipe}
+            onSkip={handleSkip}
+            disabled={queue.length === 0}
+          />
         </div>
       </div>
     </>
