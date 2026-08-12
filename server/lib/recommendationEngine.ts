@@ -152,10 +152,18 @@ class RecommendationEngine {
 
     const plexApi = new PlexAPI({ plexToken: admin.plexToken });
 
+    // Plex's local history API tags the server owner's own history with the
+    // local sentinel accountID 1, not their real plex.tv global id (which is
+    // what User.plexId stores) — only shared/managed users get their real
+    // global id in the accountID field. Seerr's own convention is that the
+    // first-created user (id 1) is always the Plex server owner, so detect
+    // that case and use the sentinel instead of user.plexId.
+    const accountId = user.id === admin.id ? 1 : user.plexId;
+
     let history;
     try {
       history = await plexApi.getWatchHistory({
-        accountId: user.plexId,
+        accountId,
         size: HISTORY_SIZE,
       });
     } catch (e) {

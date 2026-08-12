@@ -396,6 +396,16 @@ const Discover = () => {
               />
             );
             break;
+          case DiscoverSliderType.PERSONALIZED_FOR_YOU:
+            sliderComponent = (
+              <MediaSlider
+                sliderKey="for-you"
+                title={intl.formatMessage(sliderTitles.foryou)}
+                url="/api/v1/recommendations/foryou"
+                hideWhenEmpty
+              />
+            );
+            break;
         }
 
         if (isEditing) {
