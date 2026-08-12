@@ -10,7 +10,6 @@ import axios from 'axios';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
 
-const BATCH_SIZE = 20;
 const RELOAD_THRESHOLD = 5;
 
 const messages = defineMessages('components.Swipe', {

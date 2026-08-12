@@ -1,4 +1,4 @@
-import { MediaType } from '@server/constants/media';
+import type { MediaType } from '@server/constants/media';
 import { getRepository } from '@server/datasource';
 import { User } from '@server/entity/User';
 import { DbAwareColumn } from '@server/utils/DbColumnHelper';
