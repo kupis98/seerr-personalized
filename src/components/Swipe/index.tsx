@@ -111,37 +111,39 @@ const Swipe = () => {
   return (
     <>
       <PageTitle title={intl.formatMessage(messages.swipe)} />
-      <div className="mx-auto flex max-w-sm flex-col items-center">
-        <div className="relative aspect-[2/3] w-full">
-          {loading ? (
-            <div className="flex h-full w-full items-center justify-center">
-              <LoadingSpinner />
-            </div>
-          ) : queue.length === 0 ? (
-            <div className="flex h-full w-full flex-col items-center justify-center rounded-xl bg-gray-800 p-6 text-center">
-              <p className="text-lg font-semibold">
-                {intl.formatMessage(messages.empty)}
-              </p>
-              <p className="mt-2 text-sm text-gray-400">
-                {intl.formatMessage(messages.emptySubtext)}
-              </p>
-            </div>
-          ) : (
-            queue
-              .slice(0, 3)
-              .reverse()
-              .map((title, index, arr) => (
-                <SwipeCard
-                  key={`${title.mediaType}-${title.id}`}
-                  title={title}
-                  active={index === arr.length - 1}
-                  zIndex={index}
-                  onSwiped={handleSwipe}
-                />
-              ))
-          )}
+      <div className="flex w-full justify-center">
+        <div className="flex w-full max-w-sm flex-col items-center">
+          <div className="relative aspect-[2/3] w-full">
+            {loading ? (
+              <div className="flex h-full w-full items-center justify-center">
+                <LoadingSpinner />
+              </div>
+            ) : queue.length === 0 ? (
+              <div className="flex h-full w-full flex-col items-center justify-center rounded-xl bg-gray-800 p-6 text-center">
+                <p className="text-lg font-semibold">
+                  {intl.formatMessage(messages.empty)}
+                </p>
+                <p className="mt-2 text-sm text-gray-400">
+                  {intl.formatMessage(messages.emptySubtext)}
+                </p>
+              </div>
+            ) : (
+              queue
+                .slice(0, 3)
+                .reverse()
+                .map((title, index, arr) => (
+                  <SwipeCard
+                    key={`${title.mediaType}-${title.id}`}
+                    title={title}
+                    active={index === arr.length - 1}
+                    zIndex={index}
+                    onSwiped={handleSwipe}
+                  />
+                ))
+            )}
+          </div>
+          <SwipeButtons onSwipe={handleSwipe} disabled={queue.length === 0} />
         </div>
-        <SwipeButtons onSwipe={handleSwipe} disabled={queue.length === 0} />
       </div>
     </>
   );
