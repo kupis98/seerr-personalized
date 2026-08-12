@@ -2,6 +2,7 @@ import Modal from '@app/components/Common/Modal';
 import useSettings from '@app/hooks/useSettings';
 import globalMessages from '@app/i18n/globalMessages';
 import defineMessages from '@app/utils/defineMessages';
+import { Transition } from '@headlessui/react';
 import { FilmIcon } from '@heroicons/react/24/outline';
 import type { MovieDetails } from '@server/models/Movie';
 import type { TvDetails } from '@server/models/Tv';
@@ -56,10 +57,6 @@ const SwipeDetailModal = ({
     };
   }, [show, tmdbId, mediaType]);
 
-  if (!show) {
-    return null;
-  }
-
   const title = data ? ('title' in data ? data.title : data.name) : '';
 
   const trailerVideo = data?.relatedVideos
@@ -72,36 +69,47 @@ const SwipeDetailModal = ({
       : trailerVideo?.url;
 
   return (
-    <Modal
-      loading={!data}
-      title={title}
-      subTitle={data?.genres.map((g) => g.name).join(', ')}
-      backdrop={
-        data?.backdropPath
-          ? `https://image.tmdb.org/t/p/w1920_and_h800_multi_faces${data.backdropPath}`
-          : undefined
-      }
-      onCancel={onClose}
-      cancelText={intl.formatMessage(globalMessages.close)}
-      backgroundClickable
+    <Transition
+      as="div"
+      enter="transition-opacity duration-300"
+      enterFrom="opacity-0"
+      enterTo="opacity-100"
+      leave="transition-opacity duration-300"
+      leaveFrom="opacity-100"
+      leaveTo="opacity-0"
+      show={show}
     >
-      {data && (
-        <div className="mt-2 space-y-4 text-left">
-          <p className="text-sm text-gray-300">{data.overview}</p>
-          {trailerUrl && (
-            <a
-              href={trailerUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 font-medium text-red-400 hover:underline"
-            >
-              <FilmIcon className="h-5 w-5" />
-              {intl.formatMessage(messages.watchtrailer)}
-            </a>
-          )}
-        </div>
-      )}
-    </Modal>
+      <Modal
+        loading={!data}
+        title={title}
+        subTitle={data?.genres.map((g) => g.name).join(', ')}
+        backdrop={
+          data?.backdropPath
+            ? `https://image.tmdb.org/t/p/w1920_and_h800_multi_faces${data.backdropPath}`
+            : undefined
+        }
+        onCancel={onClose}
+        cancelText={intl.formatMessage(globalMessages.close)}
+        backgroundClickable
+      >
+        {data && (
+          <div className="mt-2 space-y-4 text-left">
+            <p className="text-sm text-gray-300">{data.overview}</p>
+            {trailerUrl && (
+              <a
+                href={trailerUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 font-medium text-red-400 hover:underline"
+              >
+                <FilmIcon className="h-5 w-5" />
+                {intl.formatMessage(messages.watchtrailer)}
+              </a>
+            )}
+          </div>
+        )}
+      </Modal>
+    </Transition>
   );
 };
 
