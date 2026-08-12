@@ -406,6 +406,16 @@ const Discover = () => {
               />
             );
             break;
+          case DiscoverSliderType.LIKED_TITLES:
+            sliderComponent = (
+              <MediaSlider
+                sliderKey="liked"
+                title={intl.formatMessage(sliderTitles.liked)}
+                url="/api/v1/recommendations/liked"
+                hideWhenEmpty
+              />
+            );
+            break;
         }
 
         if (isEditing) {
