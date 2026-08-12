@@ -20,12 +20,24 @@ module.exports = {
       colors: {
         indigo: colors.red,
         purple: colors.red,
-        // Deepen just the two background-surface shades toward true black
-        // (Netflix-style) while leaving lighter grays — borders, hover
-        // states, body text — untouched so contrast/legibility hold up.
+        // The whole gray ramp is CSS-variable-backed (values defined in
+        // globals.css) instead of static hex, so a single [data-theme]
+        // swap re-themes every bg-gray-*/text-gray-*/border-gray-* class
+        // already used throughout the app — no per-component changes
+        // needed for light mode. <alpha-value> keeps opacity modifiers
+        // (e.g. bg-gray-800/80) working.
         gray: {
-          900: '#0a0a0a',
-          800: '#161616',
+          50: 'rgb(var(--color-gray-50) / <alpha-value>)',
+          100: 'rgb(var(--color-gray-100) / <alpha-value>)',
+          200: 'rgb(var(--color-gray-200) / <alpha-value>)',
+          300: 'rgb(var(--color-gray-300) / <alpha-value>)',
+          400: 'rgb(var(--color-gray-400) / <alpha-value>)',
+          500: 'rgb(var(--color-gray-500) / <alpha-value>)',
+          600: 'rgb(var(--color-gray-600) / <alpha-value>)',
+          700: 'rgb(var(--color-gray-700) / <alpha-value>)',
+          800: 'rgb(var(--color-gray-800) / <alpha-value>)',
+          900: 'rgb(var(--color-gray-900) / <alpha-value>)',
+          950: 'rgb(var(--color-gray-950) / <alpha-value>)',
         },
       },
       transitionProperty: {

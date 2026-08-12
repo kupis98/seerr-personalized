@@ -1,4 +1,5 @@
 import Badge from '@app/components/Common/Badge';
+import ThemeToggle from '@app/components/Layout/ThemeToggle';
 import VersionStatus from '@app/components/Layout/VersionStatus';
 import useClickOutside from '@app/hooks/useClickOutside';
 import { Permission, useUser } from '@app/hooks/useUser';
@@ -248,6 +249,9 @@ const Sidebar = ({
                         );
                       })}
                     </nav>
+                    <div className="mt-4 space-y-2 px-2">
+                      <ThemeToggle />
+                    </div>
                     {hasPermission(Permission.ADMIN) && (
                       <div className="px-2">
                         <VersionStatus onClick={() => setClosed()} />
@@ -343,6 +347,9 @@ const Sidebar = ({
                   );
                 })}
               </nav>
+              <div className="mt-4 space-y-2 px-2">
+                <ThemeToggle />
+              </div>
               {hasPermission(Permission.ADMIN) && (
                 <div className="px-2">
                   <VersionStatus />
